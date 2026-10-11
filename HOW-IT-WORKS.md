@@ -1,26 +1,28 @@
 # How eqcast works
 
-A general overview of what eqcast is made of and how the pieces cooperate. It is deliberately not exhaustive. For setup and day-to-day use see the [user's guide](USER-GUIDE.md).
+This is a tour of what eqcast is made of and how the pieces fit together. It's a tour, not a specification, so some detail is left out on purpose. If you want to set it up and use it, the [user's guide](USER-GUIDE.md) is the better place to start.
 
 ## The problem
 
-You want to play one EverQuest client and have the same keys (and sometimes the mouse) applied to several others, at the same time, without those other clients ever coming to the front and without locking you out of your own keyboard.
+If you play several EverQuest characters at once, you know the routine. You press a key in one window and you want the others to press it too: assist, target, heal, hold the follow key. You also want that without the other windows jumping to the front, and without losing your own keyboard while it happens.
 
-Three facts about EverQuest shape the whole design (all measured on real clients):
+EverQuest makes this harder than it sounds. We measured three things on real clients, and they shaped the whole design:
 
-1. **It ignores posted window messages.** Sending `WM_KEYDOWN` and friends to a client does nothing, in the foreground or the background.
-2. **It reads the keyboard through DirectInput, and only polls while it believes it is the foreground window.** Each frame it asks Windows `GetForegroundWindow()`; if the answer is not its own window, it stops looking at the keyboard. It reads Shift, Ctrl and Alt separately, once per frame, through `GetAsyncKeyState`.
-3. **Real input only works for the real foreground window.** The "honest" approach of bringing each client to the front, sending the keys and switching back works, but costs about 0.6 s per client, which is too slow for combat and blocks your own input while it runs.
+1. **It ignores posted window messages.** Post a keyboard message such as `WM_KEYDOWN` to a client and nothing happens, whether the client is in the foreground or the background.
+2. **It only listens to the keyboard when it thinks it's in front.** It reads the keyboard through DirectInput, and every frame it asks Windows `GetForegroundWindow()`. If the answer isn't its own window, it stops looking. Shift, Ctrl and Alt are a separate case: it reads those once per frame through `GetAsyncKeyState`.
+3. **Real input only works on the real foreground window.** The brute-force answer is to bring each client to the front, send the keys, and switch back. That works, but it costs about 0.6 s per client, which is too slow for combat, and your own typing gets in the way while it runs.
 
-So eqcast does not fight these facts from outside. It puts a small piece of code *inside* each client that makes it believe it is in the foreground and feeds it the keys directly where it already looks for them.
+So eqcast doesn't try to push keys at the game from outside. Instead, it attaches a small piece of code to each client. That code answers "are you in front?" with "yes", and it hands the client its keys at the spot where the game already looks for them.
 
 ## The three programs
 
-| Program | Runs as | Its job |
+| Program | What it is | What it does |
 |---|---|---|
-| **Launcher** `eqcast-launcher.exe` | The window you open. | Defines clients, accounts, character groups, keymaps and layouts. Starts the clients, places them, logs them in, and owns the controller's lifetime. |
-| **Controller** `eqcast.exe` | A hidden child of the launcher. | Watches your keyboard and mouse, decides what to repeat, and hands it to every follower. Also draws the lights, and swaps windows when you click a small one. |
-| **Shim** `eqcast_shim.dll` (+ the injector `shimhost.exe`) | A DLL living inside each `eqgame.exe`. | Makes a background client accept the injected keys and mouse, and keeps its window borderless, scaled and where it belongs. |
+| **Launcher** `eqcast-launcher.exe` | The window you open. | Holds your clients, accounts, character groups, keymaps and layouts. Starts the clients, puts them where they belong, logs them in, and looks after the controller. |
+| **Controller** `eqcast.exe` | A hidden child of the launcher. | Watches your keyboard and mouse, decides what to repeat, and passes it on to every follower. Also draws the status lights, and swaps windows when you click a small one. |
+| **Shim** `eqcast_shim.dll` (loaded by `shimhost.exe`) | A DLL that lives inside each `eqgame.exe`. | Lets a background client accept the keys and mouse that eqcast sends it, and keeps its window borderless, scaled and in its slot. |
+
+A "shim" is just a thin layer that sits between two things and adjusts what passes through. This one sits between EverQuest and a handful of Windows calls.
 
 ```
  your keyboard / mouse
@@ -38,83 +40,87 @@ So eqcast does not fight these facts from outside. It puts a small piece of code
                 starts / stops the controller, tells it the active keymap
 ```
 
-## The launcher: getting six clients on the screen
+## The launcher: getting six clients onto one screen
 
-The launcher's work is mostly *preparation*; it is not in the path of a single keystroke.
+Most of what the launcher does is preparation. It never sits in the path of a keystroke. Here's what happens when you press Launch:
 
-1. **Plan.** From your group (which characters, on which clients, with which accounts) and your layout (a grid of slots on a monitor) it works out, for each character, what to run and which rectangle of the screen it should occupy.
-2. **Start one client at a time.** For each character, in slot order: patch the client folder's `eqclient.ini` so EverQuest creates its window in that slot, start `eqgame.exe` (with `/login:<account>` if the character has an account), wait for its window and load the shim into it. Clients are started strictly one after another because characters sharing one EverQuest folder share one `eqclient.ini`; the launcher must be sure each client has read its own slot before the next one patches the file. Window placement and settling run in the background, so a six-client launch takes about half a minute rather than a minute.
-3. **Windows.** Each client is told its slot through its environment. The shim then forces the window borderless and into the slot from the inside, and keeps it there through the login screen and character select, where EverQuest tends to rebuild its window.
-4. **Followers are scaled, not small.** Every client renders at the size of the main slot; the shim shows a follower scaled down in its own slot, the way a video player shows a video in a small window. It is the real, live window, so clicking in it works, and every client has the same UI geometry.
-5. **Login.** At the login screen the launcher types the account's password (reading the window's own content to see when the screen is up, so another window on top does not matter) and, with Auto or the *Login all* / *Quick connect all* buttons, presses LOGIN or QUICK CONNECT with real mouse input. It stops there: choosing a character and entering the world is yours.
-6. **The keymap.** Before starting any client, the launcher writes the chosen group's keymap to `active-keymap.json`. The controller polls that file about once a second and switches keymaps without a restart.
+1. **Plan.** From your group (which characters, on which clients, with which accounts) and your layout (a grid of slots on a monitor), the launcher works out what to run for each character and which rectangle of the screen it should end up in.
+2. **Start the clients, one at a time.** For each character, in slot order, the launcher patches the client folder's `eqclient.ini` so EverQuest creates its window in that slot. It then starts `eqgame.exe` (with `/login:<account>` if the character has an account), waits for the window, and loads the shim into it. Doing this one client at a time matters: characters that share an EverQuest folder also share one `eqclient.ini`, so the launcher has to be sure a client has read its own slot before the next one rewrites the file. Window placement and settling happen in the background, which brings a six-client launch down to about half a minute instead of a minute.
+3. **Window placement.** Each client learns its slot through its environment. The shim then makes the window borderless and puts it in the slot from the inside. It keeps it there through the login screen and character select, where EverQuest likes to rebuild its window.
+4. **Followers are scaled, not small.** Every client renders at the size of the main slot, and the shim shows a follower scaled down in its own slot, the way a video player shows a video in a small window. It's still the real, live window, so you can click in it, and every client has the same UI geometry.
+5. **Login.** At the login screen, the launcher types the account's password. It reads the window's own content to know when the screen is up, so another window sitting on top doesn't throw it off. When Auto is on, or when you use the *Login all* or *Quick connect all* buttons, it then presses LOGIN or QUICK CONNECT with real mouse input. It stops there. Choosing a character and entering the world is up to you.
+6. **The keymap.** Before starting any client, the launcher writes the chosen group's keymap to `active-keymap.json`. The controller checks that file about once a second, so keymaps switch without a restart.
 
-The launcher never closes or kills a client, never launches through Inner Space, and never touches clients it did not start.
+The launcher never closes or kills a client, never launches through Inner Space (the platform ISBoxer runs on), and never touches a client it didn't start.
 
 ## The controller: deciding what to repeat
 
-The controller runs in a mode where the launcher is its parent: it starts when the launcher opens, exits when the launcher closes (or notices a launcher that crashed and exits by itself, releasing every key it was holding). It does not load the shim itself; it only serves clients whose shim has reported in.
+The controller runs as a child of the launcher. It starts when the launcher opens and exits when the launcher closes. If the launcher crashes, the controller notices, releases every key it was holding, and exits on its own. It doesn't load the shim itself, and it only serves clients whose shim has reported in.
 
-### Seeing your input
+### Watching your input
 
-Two Windows low-level hooks (keyboard and mouse) run on dedicated high-priority threads. They only *observe*: the real key always reaches the client you are using. The hooks swallow exactly two things: the toggle hotkeys and the click that swaps windows. Everything else is queued to a single worker thread that owns the state.
+Two low-level Windows hooks, one for the keyboard and one for the mouse, run on dedicated high-priority threads. They mostly just observe: the real key always reaches the client you're using. The only things they swallow are the toggle hotkeys and the click that swaps windows. Everything else goes onto a queue for a single worker thread, which owns all the state.
 
 ### Main and followers
 
-The **main** is whichever EverQuest client currently owns the real foreground window; every other client is a **follower**. Clicking a different window changes the main: the controller flushes the followers, and the keys then come from the new main.
+The **main** is whichever EverQuest client currently owns the real foreground window. Every other client is a **follower**. Click a different window and that one becomes the main: the controller releases whatever the followers were holding, and the keys now come from the new main.
 
 ### Two modes
 
 | Mode | Repeats | Default hotkey |
 |---|---|---|
-| **Keymap** | only the keys and chords in the group's keymap, each with exactly its modifiers | ScrollLock |
-| **Broadcast** | every key, plus the mouse (position, clicks, wheel, right-button mouselook) | Alt+Shift+R |
+| **Keymap** | Only the keys and chords in the group's keymap, each with exactly its own modifiers. | ScrollLock |
+| **Broadcast** | Every key, plus the mouse (position, clicks, wheel, right-button mouselook). | Alt+Shift+R |
 
-They are independent. If both are on, broadcast wins and the keymap waits underneath. A modifier is never sent on its own in keymap mode, only together with the key of the chord that needed it.
+The two modes switch on and off independently. If both are on, broadcast wins and the keymap waits underneath. In keymap mode, a modifier is never sent on its own, only along with the key of the chord that needed it.
 
-### Shaping the timeline
+### Getting the timing right
 
-Delivering a keystroke to a background client is not just "write the key down". Each follower has its own timeline shaper that:
+Handing a keystroke to a background client takes more care than just writing the key down. Each follower has its own timeline shaper, which does three things:
 
-- sends a chord's modifiers first and the key a short **lead** later, because EverQuest samples Shift, Ctrl and Alt only once per frame. The lead is about 2.5 times that follower's own keyboard-poll interval, measured live;
-- holds every press for a minimum time (120 ms by default) and spaces repeated taps, because a follower only looks at the keyboard at its own polls, and would otherwise merge two quick taps into one long hold;
-- for the mouse, moves the follower's cursor to the right spot first, then sends the click.
+- **Modifiers first.** It sends a chord's modifiers first, then the key a short *lead* time later, because EverQuest only samples Shift, Ctrl and Alt once per frame. The lead is about 2.5 times that follower's own keyboard-poll interval, measured live.
+- **Presses that last.** It holds every press for a minimum time (120 ms by default) and spaces out repeated taps. A follower only looks at the keyboard at its own polls; without this, it would merge two quick taps into one long hold.
+- **Mouse in the right place.** For the mouse, it moves the follower's cursor to the right spot first and sends the click afterwards.
 
-The cursor position is sent as a fraction of the main window's client area, so followers click the same *relative* spot. That is why every client should have the same UI layout.
+The cursor position travels as a fraction of the main window's client area, so every follower clicks the same *relative* spot. That's why all your clients should share the same UI layout.
 
 ### Click to swap
 
-Every client has a **home slot**. A left click on a small follower window brings that client into the main slot and moves the main into the slot the clicked client left; everyone else stays at home. The click is consumed so the game never sees it. Only genuine user clicks count, not clicks the launcher synthesises while pressing LOGIN.
+Every client has a **home slot**. Left-click a small follower window and that client moves into the main slot, while the old main goes to the slot the clicked client just left. Everyone else stays home. The click is consumed so the game never sees it, and only genuine user clicks count, not the ones the launcher makes while pressing LOGIN.
 
 ### The lights and the rings
 
-Two small always-on-top windows show KEYMAP and BROADCAST state (and can be clicked to toggle). While the mouse is being broadcast, a small click-through ring is drawn on each follower at the spot where its mirrored cursor is.
+Two small always-on-top windows show whether KEYMAP and BROADCAST are on, and you can click either one to toggle it. While the mouse is being broadcast, a click-through ring appears on each follower at the spot where its mirrored cursor is.
 
-## The shim: making a background client listen
+## The shim: letting a background client listen
 
-The shim is a DLL loaded into each `eqgame.exe` by the injector `shimhost.exe`. It binds the client's shared-memory block and hooks a handful of calls:
+`shimhost.exe` loads the shim DLL into each `eqgame.exe`. Once it's there, the shim opens the client's shared-memory block and answers a handful of the Windows calls the client makes:
 
-| What EverQuest does | What the shim answers |
+| What EverQuest asks | What the shim says |
 |---|---|
-| `GetForegroundWindow()`, many times a second | "You are." (only while the controller's heartbeat is fresh and a mode is on). The client now keeps polling the keyboard though it is in the background. |
-| DirectInput keyboard read (`GetDeviceData`) | The real data, merged with the injected keys as ordinary press and release events. A device that is not acquired is reported as fine so the client keeps reading. |
-| `GetAsyncKeyState` for Shift, Ctrl, Alt | The injected modifier state. |
-| `GetCursorPos`, `SetCursorPos`, `WindowFromPoint`, DirectInput mouse | The injected cursor, buttons, wheel and relative motion. |
-| Window style, move, size and maximise calls | Its own, so the window stays borderless, in its slot, and scaled. |
+| `GetForegroundWindow()`, many times a second | "You are." This only happens while the controller's heartbeat is fresh and a mode is on. The client keeps polling the keyboard even though it's in the background. |
+| DirectInput keyboard read (`GetDeviceData`) | The real data, merged with the relayed keys as ordinary press and release events. A device that isn't acquired is reported as fine, so the client keeps reading. |
+| `GetAsyncKeyState` for Shift, Ctrl, Alt | The modifier state eqcast is relaying. |
+| `GetCursorPos`, `SetCursorPos`, `WindowFromPoint`, DirectInput mouse | The relayed cursor, buttons, wheel and relative motion. |
+| Window style, move, size and maximize calls | The shim's own, so the window stays borderless, in its slot, and scaled. |
 
-It also publishes back to the controller how often the client polls the keyboard (used for the lead above), the client's window state and its home slot (so a restarted controller knows where everybody belongs).
+The shim also reports back to the controller how often the client polls the keyboard (which is where the lead above comes from), the state of the client's window, and the client's home slot, so a restarted controller knows where everybody belongs.
 
 ### The shared-memory block
 
-The controller creates one named block per client, `Local\eqcast.keys.<client pid>`. Conceptually it holds: for each key, whether it is held and a press counter (so a very short tap cannot be lost between two polls of the client); the mouse fields; any window command; flags telling the shim which kinds of answers to give; and a heartbeat the controller refreshes constantly. The format is a documented contract between the two programs.
+The controller creates one named block per client, `Local\eqcast.keys.<client pid>`. For each key it holds whether the key is down, plus a press counter, so a very short tap can't slip between two of the client's polls. It also holds the mouse fields, any pending window command, flags that tell the shim which kinds of answers to give, and a heartbeat that the controller keeps refreshing. The layout is a documented contract between the two programs.
 
-### Fail-safes
+### When something goes wrong
 
-- The shim **fails open**: any fault passes the real call straight through.
-- If the heartbeat is more than half a second old (the controller died or hung), the shim stops answering "foreground", releases every injected key and button, and the client behaves as if eqcast were not there.
-- When a mode is switched off the controller releases everything through the timeline first, and keeps the flags up for a brief dwell (100 to 400 ms) so each follower can see the releases before it stops listening.
+eqcast is built to get out of the way:
 
-## Lifetime, in one picture
+- **The shim fails open.** If anything goes wrong inside it, the real call goes straight through, untouched.
+- **No heartbeat, no help.** If the heartbeat is more than half a second old, because the controller died or hung, the shim stops saying "you're in front" and releases every key and button it was holding. The client then carries on as though eqcast had never been there.
+- **Clean goodbyes.** When you switch a mode off, the controller releases everything through the timeline first. It then keeps the flags up for a short dwell (100 to 400 ms) so each follower sees the releases before it stops listening.
+
+## A session, start to finish
+
+Here is a whole session at a glance:
 
 ```
 open launcher ---> controller starts (hidden), scans for eqgame every second
@@ -124,14 +130,14 @@ you play      ---> hooks -> worker -> timeline -> block -> shim -> EverQuest
 close launcher --> controller asked to quit: keys released, flags cleared; ended after 3 s if it hangs
 ```
 
-## What eqcast does *not* do
+## What eqcast doesn't do
 
-- It does not pick your character or enter the world.
-- It does not mirror a left-button *drag*, or the horizontal wheel.
-- It does not inject into, or control, clients started by other programs: a client started by hand gets no shim and no mirroring.
-- It does not touch ISBoxer-managed clients: they are skipped on purpose.
-- It cannot rescue a key-up that Windows never delivered to the hooks (a UAC prompt, Win+L): tap the key in that client.
+- It doesn't choose your character or enter the world. That's yours.
+- It doesn't mirror a left-button *drag*, or the horizontal wheel.
+- It doesn't attach to or control clients started by other programs. A client you start by hand gets no shim and no mirroring.
+- It leaves ISBoxer-managed clients alone. They're skipped on purpose.
+- It can't rescue a key-up that Windows never delivered to the hooks (a UAC prompt, Win+L). If a key seems stuck, tap it in that client.
 
-## The one-sentence summary
+## In one breath
 
-The launcher prepares and starts the clients, the controller watches you and writes what to repeat into one shared-memory block per client, and a shim inside each client makes it believe it is in front and reads that block where it already looks for the keyboard and mouse.
+The launcher gets the clients started and in place. The controller watches what you do and writes what should be repeated into one shared-memory block per client. A shim inside each client tells the game it's in front, and reads that block at the spot where the game already looks for the keyboard and mouse.

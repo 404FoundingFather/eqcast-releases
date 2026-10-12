@@ -115,7 +115,7 @@ The built-in keymap is called `default`. It has the number keys `0`, `4`, `5` an
 - A modifier on its own (`LShift`) can't be an entry; put it in a chord. The two hotkeys on the Settings tab can't be entries either.
 - **Keypad keys need NumLock on.**
 - **Import from ISBoxer...** copies the keys one of your ISBoxer key maps broadcasts into a new keymap. Only plain key broadcasts come over; menus, repeaters, window actions and remapped keys are left out, and the dialog says how many. If ISBoxer isn't installed, it tells you and offers to let you find the profile yourself.
-- Press **Save**. The group's keymap is handed to the controller at every launch, and it switches without a restart.
+- Press **Save**. The group's keymap is handed to the controller at every launch, and again whenever you save this tab or change the launched group's keymap on the Groups tab, so an edit is live in the running clients within about a second. No restart, no relaunch.
 
 ### 4.5 Clients
 
@@ -219,7 +219,7 @@ Everything is in `%USERPROFILE%\.eqcast` unless noted.
 | `keymaps.json` | Your keymaps. |
 | `layouts.json` | Your layouts (edited by hand). |
 | `controller-settings.json` | The Settings tab's hotkeys, lights and behaviour. |
-| `active-keymap.json` | The keymap of the last launched group, read by the controller. |
+| `active-keymap.json` | The keymap of the last launched group, read by the controller. Rewritten when you save the Keymaps tab or change that group's keymap. |
 | `controller.log` | What the controller is doing. The first place to look when mirroring misbehaves. |
 | `eqclient.ini.eqcast.bak` | A one-time backup next to each EverQuest `eqclient.ini` that eqcast changed. |
 

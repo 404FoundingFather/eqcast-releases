@@ -71,14 +71,14 @@ The Groups and Clients tabs save by themselves when you launch or close the laun
 The tab the window opens on.
 
 - **Group** and **Layout** pick what to start. The drawing shows each character's name in its slot, and the plan box beside it updates with any warnings as you change either one.
-- The slot table lists each character with an **Account** drop-down. You can pick a different account for one launch without editing the group; the choice isn't saved and is forgotten when you switch groups or restart the launcher.
-- **Launch** starts the group. **Cancel** stops after the current step; clients already started keep running.
+- The slot table lists each character with an **Account** drop-down and a small dot. You can pick a different account for one launch without editing the group; the choice isn't saved and is forgotten when you switch groups or restart the launcher. The dot is green while the client eqcast started for that slot is still running, grey otherwise (hover it for the detail).
+- **Launch** starts the group, or rather the part of it that isn't running: slots whose dot is green are skipped, so after a crash you can simply press Launch again and only the missing client starts, password typed and all. If everything is running, Launch does nothing and the log says so. It never starts a second copy of a client. **Cancel** stops after the current step; clients already started keep running.
 - **Login all** presses LOGIN and **Quick connect all** presses QUICK CONNECT, on every client whose password eqcast typed. It uses real mouse clicks, one client at a time, so keep your hands off the mouse. A client is never clicked twice; if one didn't take, press the button again and only that one is tried.
 - **Auto** is ticked at every start. With it on, eqcast presses QUICK CONNECT for you as soon as the launch finishes.
-- **Relaunch one client.** Each slot in the drawing has a small circular-arrow button in its top-right corner. If a client crashed or you closed it, press that button. It starts just that character again, in its own slot, at the login screen with the account name filled in. You type the password and log in. If eqcast thinks that client is still running, it asks first.
+- **Relaunch one client.** Each slot in the drawing has a small circular-arrow button in its top-right corner. If a client crashed or you closed it, press that button. It starts just that character again, in its own slot, at the login screen with the account name filled in. You type the password and log in. While that slot's dot is green the button does nothing (the log says the client is still running): close the client first.
 - The log underneath narrates the launch. The status line at the bottom of the window shows what the controller is doing.
 
-Launching a group twice starts a second set of clients. Launch doesn't check for ones already running; only the relaunch button does.
+eqcast only knows about the clients it started itself since the launcher was opened. After you restart the launcher every dot is grey and Launch starts the whole group again, so close the old clients first.
 
 ### 4.2 Groups
 

@@ -180,7 +180,7 @@ The main is simply the client you're using. Click into a different window and th
 
 ### Click to swap
 
-With the big-main layouts, a left click on a small follower window swaps it into the main slot, and the old main moves into the slot it left. Everyone else stays put. The click itself never reaches the game. This only works on layouts whose slots differ in size; on the equal-tile layouts there's nothing to swap into.
+With the big-main layouts, a left click on a small follower window swaps it into the main slot, and the old main moves into the slot it left. Everyone else stays put. The click itself never reaches the game. If the character in the main slot logs out, the slot is simply empty: click the main character's small window to bring it back, or another follower to put that one in. This only works on layouts whose slots differ in size; on the equal-tile layouts there's nothing to swap into.
 
 ### Things that look odd but are normal
 

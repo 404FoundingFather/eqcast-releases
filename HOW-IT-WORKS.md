@@ -63,7 +63,7 @@ Two low-level Windows hooks, one for the keyboard and one for the mouse, run on 
 
 ### Main and followers
 
-The **main** is whichever EverQuest client currently owns the real foreground window. Every other client is a **follower**. Click a different window and that one becomes the main: the controller releases whatever the followers were holding, and the keys now come from the new main.
+The **main** is whichever EverQuest client currently owns the real foreground window. Every other client is a **follower**. Click a different window and that one becomes the main: the controller releases whatever the followers were holding, and the keys now come from the new main. A client whose slot you switched OFF in the launcher is left out entirely: the launcher writes its process id to a small file that the controller reads once a second, and from then on nothing is relayed to it until you switch it back on.
 
 ### Two modes
 

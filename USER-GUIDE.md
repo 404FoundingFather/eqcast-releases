@@ -78,7 +78,7 @@ The tab the window opens on.
 - **Relaunch one client.** Each slot in the drawing has a small circular-arrow button in its top-right corner. If a client crashed or you closed it, press that button. It starts just that character again, in its own slot, at the login screen with the account name filled in. You type the password and log in. While that slot's dot is green the button does nothing (the log says the client is still running): close the client first.
 - The log underneath narrates the launch. The status line at the bottom of the window shows what the controller is doing.
 
-eqcast only knows about the clients it started itself since the launcher was opened. After you restart the launcher every dot is grey and Launch starts the whole group again, so close the old clients first.
+eqcast remembers the clients it started, even across a restart of the launcher: open it again while they run and their dots are green right away, and Launch fills in only what is missing. It only knows clients it started itself, though. One you started by hand is invisible to it, and Launch would start another for that slot.
 
 ### 4.2 Groups
 
@@ -220,6 +220,7 @@ Everything is in `%USERPROFILE%\.eqcast` unless noted.
 | `layouts.json` | Your layouts (edited by hand). |
 | `controller-settings.json` | The Settings tab's hotkeys, lights and behaviour. |
 | `active-keymap.json` | The keymap of the last launched group, read by the controller. Rewritten when you save the Keymaps tab or change that group's keymap. |
+| `clients.json` | The clients eqcast started (which slot, which process), so the Launch tab's dots are right after a restart. No passwords. |
 | `controller.log` | What the controller is doing. The first place to look when mirroring misbehaves. |
 | `eqclient.ini.eqcast.bak` | A one-time backup next to each EverQuest `eqclient.ini` that eqcast changed. |
 

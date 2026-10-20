@@ -233,7 +233,7 @@ Everything is in `%USERPROFILE%\.eqcast` unless noted.
 
 To undo eqcast's changes to a client's `eqclient.ini`, close that client and copy the `.bak` file over `eqclient.ini`. The backup is from before eqcast's first edit, so it also reverts any EverQuest options you've changed since then.
 
-The **File** menu has Save, Open and Reload for the layouts and keymaps files, **Restart controller**, and Exit. The version is under **Help > About**.
+The **File** menu has Save, Open and Reload for the layouts and keymaps files, **Restart controller**, and Exit. The version is in the window's title bar (`eqcast launcher v1.9.1`) and under **Help > About**.
 
 ---
 

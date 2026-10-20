@@ -148,7 +148,7 @@ You can leave all of this alone on the first run. Saving the hotkeys, the game m
 | | Click the lights to switch the modes | on | Clicking a light does what its hotkey does. |
 | | Position | Top right | Top left, Top middle, Top right, Bottom left or Bottom right of the game monitor. |
 | **Behaviour** | Keymap on when the controller starts | on | Keymap mode is live as soon as the clients are found. Broadcast always starts off. |
-| | Swap windows by clicking a small one | on | See [Click to swap](#click-to-swap). |
+| | Swap windows by clicking a small one | on | See [Click to swap](#click-to-swap). Also covers swapping a client in when you switch to it with Alt+Tab or the taskbar. |
 | | Mirror the mouse | on | Lets broadcast mode repeat the mouse: position, clicks, wheel and mouselook. |
 | | Show the green rings on the followers | on | A small ring in each follower where its mirrored cursor is. |
 | **Login** | Log in automatically after launching | on | Types each account's password at the login screen. |
@@ -183,6 +183,10 @@ The main is simply the client you're using. Click into a different window and th
 ### Click to swap
 
 With the big-main layouts, a left click on a small follower window swaps it into the main slot, and the old main moves into the slot it left. Everyone else stays put. The click itself never reaches the game. If the character in the main slot logs out, the slot is simply empty: click the main character's small window to bring it back, or another follower to put that one in. This only works on layouts whose slots differ in size; on the equal-tile layouts there's nothing to swap into.
+
+**Switching works the same way.** Bring a client to the front with Alt+Tab, Win+Tab or its taskbar button (or a thumbnail or Task View tile) and it is swapped into the main slot just as if you had clicked its window; the old main moves into the slot it left. Switching to the client that is already the main swaps nothing, and Alt+Tab still cycles in Windows' usual most-recently-used order, so one more Alt+Tab takes you back to the character you came from. Only a switch you make yourself counts: the clients getting the focus while the launcher logs them in never rearrange anything. It is the same setting as clicking ("Swap windows by clicking a small one"). Win+number taskbar shortcuts don't swap.
+
+**All the clients come to the front together.** Whenever one client comes to the front, by any route, the other clients are placed right behind it, so bringing one up over your browser brings up all of them, not just that one. Nothing is moved or resized by this, and there is nothing to switch on or off. A client you switched OFF in the Launch tab comes along too; a minimised one stays minimised.
 
 ### Things that look odd but are normal
 

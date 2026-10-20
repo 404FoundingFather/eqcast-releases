@@ -88,6 +88,10 @@ The cursor position travels as a fraction of the main window's client area, so e
 
 Every client has a **home slot**. Left-click a small follower window and that client moves into the main slot, while the old main goes to the slot the clicked client just left. Everyone else stays home. The click is consumed so the game never sees it, and only genuine user clicks count, not the ones the launcher makes while pressing LOGIN.
 
+A **switch** counts as a click too. The controller checks which window is in front every 50 milliseconds; when a client has come to the front and, within the last second, you pressed Tab with Alt or the Windows key held (Alt+Tab, Win+Tab) or clicked outside every client window (a taskbar button, a thumbnail, a Task View tile), it runs the same swap. The focus changes the launcher makes while logging in, and the one the controller makes itself when it swaps after a click, are not switches, so they never rearrange anything. Switching to the client that is already the main swaps nothing.
+
+Separately, whenever any client comes to the front, the controller places the other clients directly behind it in the window stack, in their existing order, without activating, moving or resizing any of them. That is why bringing one client up over a browser brings up the whole group, and why, after a swap, the old main sits right behind the new one, so Alt+Tab goes back to it. A client answers such a request only when its own window gets to it, so the controller does this on a background thread and never holds up your keys while it waits.
+
 ### The lights and the rings
 
 Two small always-on-top windows show whether KEYMAP and BROADCAST are on, and you can click either one to toggle it. While the mouse is being broadcast, a click-through ring appears on each follower at the spot where its mirrored cursor is.
